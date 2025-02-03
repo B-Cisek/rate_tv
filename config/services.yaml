@@ -17,7 +17,35 @@ services:
         resource: '../src/'
         exclude:
             - '../src/Kernel.php'
-#            - '../src/Name/Infrastructure/Doctrine/Entity/'
+            - '../src/Shared/Infrastructure/Doctrine/Entity/'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+    
+    _instanceof:
+        App\RateTv\Shared\Application\Command\Sync\CommandHandler:
+            tags:
+                - { name: 'messenger.message_handler', bus: command.sync.bus }
+        App\RateTv\Shared\Application\Command\Async\CommandHandler:
+            tags:
+                - { name: 'messenger.message_handler', bus: command.async.bus }
+        App\RateTv\Shared\Application\Event\EventHandler:
+            tags:
+                - { name: 'messenger.message_handler', bus: event.bus }
+        App\RateTv\Shared\Domain\DomainEventListenerInterface:
+            tags:
+                - domain_event_listener
+    
+    App\RateTv\Shared\Infrastructure\Symfony\Listener\ExceptionListener:
+        arguments:
+            $environment: "%kernel.environment%"
+        tags:
+            - { name: kernel.event_listener, event: kernel.exception }
+        
+    App\RateTv\Shared\Infrastructure\Symfony\Request\Resolver\JsonBodyResolver:
+        tags:
+            - { name: controller.argument_value_resolver, priority: -50 }
+            
+    App\RateTv\Shared\Domain\DomainEventDispatcher:
+        arguments:
+            $listeners: !tagged_iterator domain_event_listener
